@@ -12,7 +12,7 @@
   function load(key, fallback) {
     try { var v = JSON.parse(localStorage.getItem(key)); return v == null ? fallback : v; } catch (e) { return fallback; }
   }
-  function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) {} }
+  function store(key, val) { try { localStorage.setItem(key, JSON.stringify(val)); } catch (e) { } }
 
   var today = new Date();
   var todayStr = fmt(today);
@@ -34,6 +34,9 @@
   if (!Array.isArray(posts)) posts = [];
   var seedNow = Date.now();
   var SEED_POSTS = [
+    { id: 1001, region: '서울 마포구', cat: '꿀팁', title: '작은 방을 넓어 보이게 정리하는 법', body: '벽면에 붙이는 작은 거울을 비치하면 시야가 넓어 보여요. 수납장은 가장 자주 쓰는 물건만 남기고, 높은 선반에 보관을 올려 두면 공간이 훨씬 정돈돼 보입니다.', author: '자취8년차', mine: false, ts: seedNow - 3600000 * 5, likes: 12, liked: false, comments: [{ author: '새내기', text: '저도 다음 주에 따라 해볼게요!' }] },
+    { id: 1002, region: '서울 마포구', cat: '꿀팁', title: '세제는 이렇게 놓으면 관리가 편해요', body: '설거지용, 청소용, 세탁용을 각각 분리해 칸을 나누고, 세면대 아래에 걸이형 수납을 두면 자주 사용하는 세제와 수건을 한 번에 정리할 수 있어요. 자주 쓰는 건 눈높이에 두면 찾기 편합니다.', author: '청소고수', mine: false, ts: seedNow - 3600000 * 3, likes: 9, liked: false, comments: [{ author: '좋아요', text: '배수구 주변 정리에도 좋겠네요.' }] },
+    { id: 1003, region: '서울 마포구', cat: '꿀팁', title: '1인 가구 냉장고 관리 루틴', body: '채소는 물기를 제거한 뒤 채반에 잠깐 두고 보관해주면 숙성 속도가 줄고, 소분한 간식은 자석통이나 눈높이 선반에 두면 꺼내기 편해요. 냉장고 앞쪽에는 자주 먹는 음식만 두면 매번 정리할 필요가 줄어요.', author: '살림꿀팁', mine: false, ts: seedNow - 3600000 * 8, likes: 15, liked: false, comments: [{ author: '후배', text: '냉장고 정리 팁 진짜 좋네요.' }] },
     { id: 1, region: '서울 마포구', cat: '꿀팁', title: '배수구 냄새 잡는 방법', body: '베이킹소다 한 스푼 + 식초 반 컵 부으면 거품 나고, 10분 뒤 뜨거운 물로 헹구면 냄새가 줄어요.', author: '자취8년차', mine: false, ts: seedNow - 3600000 * 5, likes: 12, liked: false, comments: [{ author: '새내기', text: '오 바로 해볼게요!' }] },
     { id: 2, region: '서울 마포구', cat: '질문', title: '근처 세탁방 추천해주세요', body: '이불 빨래할 수 있는 큰 세탁기 있는 곳이면 좋겠어요.', author: '이사온사람', mine: false, ts: seedNow - 3600000 * 2, likes: 3, liked: false, comments: [] },
     { id: 3, region: '서울 마포구', cat: '동네', title: '쓰레기 배출 시간 바뀐 건가요?', body: '어제부터 수거 시간이 달라진 것 같은데 아시는 분 계신가요?', author: '야근러', mine: false, ts: seedNow - 60000 * 20, likes: 7, liked: false, comments: [{ author: '반장님', text: '구청 공지 확인해보니 저녁 6시부터래요.' }] },
@@ -106,14 +109,23 @@
   document.querySelectorAll('.mob-icon[data-view]').forEach(function (a) {
     a.addEventListener('click', function (e) { e.preventDefault(); showView(a.getAttribute('data-view')); });
   });
-  document.querySelector('.nav-item[data-action="photo"]').addEventListener('click', function (e) {
-    e.preventDefault();
-    $('photoInput').click();
+  // 홈 버튼과 모바일 사진 탭에서 같은 사진 첨부 흐름을 사용한다.
+  document.querySelectorAll('[data-action="photo"]').forEach(function (button) {
+    button.addEventListener('click', function (e) {
+      e.preventDefault();
+      $('photoInput').click();
+    });
   });
   document.querySelectorAll('[data-go]').forEach(function (a) {
     a.addEventListener('click', function (e) {
       e.preventDefault();
-      showView(a.getAttribute('data-go'));
+      var target = a.getAttribute('data-go');
+      var tipId = a.getAttribute('data-tip-id');
+      if (tipId) {
+        openTipDetail(tipId);
+        return;
+      }
+      showView(target);
       var t = a.getAttribute('data-topic');
       if (t) openTopic(t, a.getAttribute('data-fill'));
     });
@@ -325,11 +337,14 @@
   }
 
   var TOPICS = [
-    { id: 'qna', ico: '💬', name: '자유 질문', desc: '자취 관련 궁금한 것', photo: false,
+    {
+      id: 'qna', ico: '💬', name: '자유 질문', desc: '자취 관련 궁금한 것', photo: false,
       fields: [{ k: 'q', label: '궁금한 점', ph: '예) 세탁기에서 냄새가 나요' }],
       draft: function (v) { return '저는 ' + regionText() + '에서 자취하는 세입자예요.\n\n질문: ' + (v.q || '(여기에 질문을 적어주세요)') + '\n\n초보도 따라 할 수 있게 단계별로 알려주고, 주의할 점도 함께 알려주세요.'; },
-      reply: function (v, text) { return keywordReply(v.q || text); } },
-    { id: 'nearby', ico: '📍', name: '근처 탐색', desc: '세탁방·편의점·약국·마트', photo: false,
+      reply: function (v, text) { return keywordReply(v.q || text); }
+    },
+    {
+      id: 'nearby', ico: '📍', name: '근처 탐색', desc: '세탁방·편의점·약국·마트', photo: false,
       fields: [{ k: 'what', label: '찾는 곳', ph: '예) 세탁방, 편의점, 약국, 마트' }, { k: 'cond', label: '원하는 조건 (선택)', ph: '예) 24시간, 이불 빨래 가능' }],
       draft: function (v) { return regionText() + ' 근처에서 걸어서 갈 수 있는 ' + (v.what || '(찾는 곳)') + '을(를) 찾고 있어요.' + (v.cond ? '\n조건: ' + v.cond : '') + '\n\n후보를 가까운 순서로 알려주고, 고를 때 확인할 점도 알려주세요.'; },
       reply: function (v) {
@@ -338,38 +353,55 @@
         var lines = PLACES[key].map(function (p) { return '• ' + p.n + ' — ' + p.d; });
         return regionText() + ' 근처 ' + key + ' 후보예요 (예시 데이터).\n\n' + lines.join('\n') + '\n\n고를 때는 운영 시간, 가격, 후기를 지도에서 한 번 더 확인하세요.';
       },
-      action: function (v) { var key = placeKey(v.what || ''); return key ? { label: '지도에서 보기', run: function () { mapCat = key; mapIdx = 0; mapReady = false; showView('map'); } } : null; } },
-    { id: 'trash', ico: '♻️', name: '분리배출', desc: '이건 어떻게 버려요?', photo: true,
+      action: function (v) { var key = placeKey(v.what || ''); return key ? { label: '지도에서 보기', run: function () { mapCat = key; mapIdx = 0; mapReady = false; showView('map'); } } : null; }
+    },
+    {
+      id: 'trash', ico: '♻️', name: '분리배출', desc: '이건 어떻게 버려요?', photo: true,
       fields: [{ k: 'item', label: '버릴 물건', ph: '예) 치킨 뼈, 깨진 컵, 택배 박스' }],
       draft: function (v) { return '다음 물건을 어떻게 분리배출해야 하는지 알려주세요.\n물건: ' + (v.item || '(버릴 물건)') + '\n지역: ' + regionText() + photoLine() + '\n\n종류(일반/재활용/음식물/대형)와 버리기 전 손질 방법, 배출 시 주의할 점을 알려주세요.'; },
-      reply: function () { return R_TRASH; } },
-    { id: 'cook', ico: '🍳', name: '냉장고 요리', desc: '남은 재료로 한 끼', photo: true,
+      reply: function () { return R_TRASH; }
+    },
+    {
+      id: 'cook', ico: '🍳', name: '냉장고 요리', desc: '남은 재료로 한 끼', photo: true,
       fields: [{ k: 'ing', label: '가진 재료', ph: '예) 두부, 방울토마토, 우유' }, { k: 'time', label: '시간·도구 (선택)', ph: '예) 15분, 프라이팬만' }],
       draft: function (v) { return '냉장고에 ' + (v.ing || '(가진 재료)') + '이(가) 있어요.' + (v.time ? '\n조건: ' + v.time : '') + photoLine() + '\n\n임박한 재료를 먼저 쓰는 요리 3가지를 재료·순서와 함께 알려주세요.'; },
-      reply: function () { return R_COOK; } },
-    { id: 'clean', ico: '🧹', name: '청소·곰팡이', desc: '얼룩, 냄새, 곰팡이', photo: true,
+      reply: function () { return R_COOK; }
+    },
+    {
+      id: 'clean', ico: '🧹', name: '청소·곰팡이', desc: '얼룩, 냄새, 곰팡이', photo: true,
       fields: [{ k: 'where', label: '어디가 어떤가요?', ph: '예) 욕실 천장에 검은 곰팡이' }],
       draft: function (v) { return '집에서 이런 문제가 생겼어요.\n상황: ' + (v.where || '(장소와 증상)') + photoLine() + '\n\n원인, 직접 해결하는 순서, 쓰면 안 되는 세제, 집주인에게 알려야 하는 경우를 구분해서 알려주세요.'; },
-      reply: function () { return R_MOLD; } },
-    { id: 'contract', ico: '📄', name: '계약·보증금', desc: '입주·퇴거 체크리스트', photo: false,
+      reply: function () { return R_MOLD; }
+    },
+    {
+      id: 'contract', ico: '📄', name: '계약·보증금', desc: '입주·퇴거 체크리스트', photo: false,
       fields: [{ k: 'sit', label: '지금 상황', ph: '예) 다음 달 퇴거인데 보증금 반환이 걱정돼요' }],
       draft: function (v) { return '월세 계약 중인 세입자예요.\n상황: ' + (v.sit || '(지금 상황)') + '\n\n지금 해야 할 일을 순서대로 알려주고, 놓치기 쉬운 점과 상담받을 수 있는 공공기관도 알려주세요.'; },
-      reply: function () { return R_CONTRACT; } },
-    { id: 'landlord', ico: '📝', name: '집주인 문자', desc: '정중한 요청 문자 초안', photo: true,
+      reply: function () { return R_CONTRACT; }
+    },
+    {
+      id: 'landlord', ico: '📝', name: '집주인 문자', desc: '정중한 요청 문자 초안', photo: true,
       fields: [{ k: 'issue', label: '문제 상황', ph: '예) 보일러가 작동하지 않아요' }],
       draft: function (v) { return '집주인에게 보낼 문자를 써주세요.\n보내는 사람: 세입자 ' + settings.name + '\n문제: ' + (v.issue || '(문제 상황)') + photoLine() + '\n\n정중하고 짧게, 방문 가능한 일정을 묻는 내용으로 써주세요.'; },
       reply: function (v) {
         var issue = (v.issue || '').trim() || '확인이 필요한 사항이 있습니다';
         return '집주인에게 보낼 문자 초안이에요.\n\n안녕하세요, 사장님. 세입자 ' + settings.name + '입니다.\n다름이 아니라 아래 문제로 연락드립니다.\n- ' + issue + '\n' + (photoUrl ? '사진을 함께 보내드리니 확인 부탁드립니다.' : '상황을 말씀드리니 확인 부탁드립니다.') + '\n가능하신 방문 일정이나 조치 방법을 알려주시면 맞춰서 협조하겠습니다.\n바쁘신 중에 죄송하고, 회신 기다리겠습니다. 감사합니다.\n\n※ 상황에 맞게 내용을 고쳐서 보내세요.';
       },
-      action: function () { return { label: '문자 복사', run: function (btn, answer) {
-        var body = answer.split('\n\n').slice(1, -1).join('\n\n');
-        try { navigator.clipboard.writeText(body).then(function () { btn.textContent = '복사됐어요'; }, function () { btn.textContent = '복사 실패'; }); } catch (e) { btn.textContent = '복사 실패'; }
-      } }; } },
-    { id: 'bill', ico: '💡', name: '공과금·생활비', desc: '아끼는 법, 납부 관리', photo: false,
+      action: function () {
+        return {
+          label: '문자 복사', run: function (btn, answer) {
+            var body = answer.split('\n\n').slice(1, -1).join('\n\n');
+            try { navigator.clipboard.writeText(body).then(function () { btn.textContent = '복사됐어요'; }, function () { btn.textContent = '복사 실패'; }); } catch (e) { btn.textContent = '복사 실패'; }
+          }
+        };
+      }
+    },
+    {
+      id: 'bill', ico: '💡', name: '공과금·생활비', desc: '아끼는 법, 납부 관리', photo: false,
       fields: [{ k: 'q', label: '궁금한 점', ph: '예) 겨울 가스비를 줄이고 싶어요' }],
       draft: function (v) { return '자취방 생활비 관련 질문이에요.\n질문: ' + (v.q || '(궁금한 점)') + '\n\n바로 할 수 있는 절약 방법과 납부를 놓치지 않는 방법을 알려주세요.'; },
-      reply: function () { return R_BILL; } }
+      reply: function () { return R_BILL; }
+    }
   ];
   function topicById(id) { for (var i = 0; i < TOPICS.length; i++) { if (TOPICS[i].id === id) return TOPICS[i]; } return null; }
   function fieldValues() {
@@ -514,6 +546,7 @@
   /* ===================== 커뮤니티 ===================== */
   var catFilter = '전체', scope = 'here';
   var openCmt = {};
+  var selectedPostId = null;
   function rel(ts) {
     var m = Math.floor((Date.now() - ts) / 60000);
     if (m < 1) return '방금 전';
@@ -523,6 +556,66 @@
     return Math.floor(h / 24) + '일 전';
   }
   function savePosts() { store('zip-posts', posts); }
+  function openTipDetail(postId) {
+    selectedPostId = Number(postId) || null;
+    if (selectedPostId) openCmt[selectedPostId] = true;
+    catFilter = '전체';
+    scope = 'here';
+    showView('community');
+  }
+  function renderPostDetail(post, box) {
+    var art = el('article', 'post-detail-card');
+    var meta = el('div', 'post-meta');
+    meta.appendChild(el('span', 'tag', post.cat));
+    if (post.region) meta.appendChild(el('span', 'loc', '📍 ' + post.region));
+    meta.appendChild(el('span', null, post.author));
+    meta.appendChild(el('span', null, '· ' + rel(post.ts)));
+    art.appendChild(meta);
+    art.appendChild(el('h3', null, post.title));
+    art.appendChild(el('p', null, post.body));
+
+    var act = el('div', 'post-actions');
+    var like = el('button', 'pbtn' + (post.liked ? ' on' : ''), '♥ ' + post.likes);
+    like.type = 'button';
+    like.addEventListener('click', function () {
+      post.liked = !post.liked;
+      post.likes += post.liked ? 1 : -1;
+      savePosts();
+      renderPosts();
+    });
+    act.appendChild(like);
+    var cm = el('button', 'pbtn', '💬 ' + post.comments.length);
+    cm.type = 'button';
+    cm.addEventListener('click', function () { openCmt[post.id] = !openCmt[post.id]; renderPosts(); });
+    act.appendChild(cm);
+    art.appendChild(act);
+
+    if (openCmt[post.id]) {
+      var box2 = el('div', 'cmt detail-cmt');
+      post.comments.forEach(function (c) {
+        var it = el('div', 'cmt-item');
+        it.appendChild(el('b', null, c.author));
+        it.appendChild(document.createTextNode(c.text));
+        box2.appendChild(it);
+      });
+      var form = el('form', 'cmt-form');
+      var inp = el('input'); inp.type = 'text'; inp.placeholder = '댓글을 입력하세요'; inp.maxLength = 100;
+      var btn = el('button', 'btn-primary', '등록'); btn.type = 'submit';
+      form.appendChild(inp); form.appendChild(btn);
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        var v = inp.value.trim();
+        if (!v) return;
+        post.comments.push({ author: settings.name, text: v });
+        savePosts();
+        renderPosts();
+      });
+      box2.appendChild(form);
+      art.appendChild(box2);
+    }
+
+    box.appendChild(art);
+  }
   function renderPosts() {
     var chips = $('catChips'); chips.textContent = '';
     ['전체', '자유', '꿀팁', '질문', '동네'].forEach(function (c) {
@@ -537,16 +630,41 @@
     $('postWhere').textContent = region ? '📍 ' + region : '';
     $('scopeNote').textContent = !region ? '설정에서 우리 동네를 입력하면 동네별로 모아 볼 수 있어요.'
       : scope === 'near' ? (near.length ? '📍 ' + near.join(' · ') + ' 글을 보여줘요.' : '아직 이 지역의 주변 동네 정보가 없어요.')
-      : scope === 'here' ? '📍 ' + region + ' 이웃들의 글이에요.' : '모든 동네의 글을 보여줘요.';
+        : scope === 'here' ? '📍 ' + region + ' 이웃들의 글이에요.' : '모든 동네의 글을 보여줘요.';
     document.querySelectorAll('#scopeSeg button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-scope') === scope); });
     var items = posts.filter(function (p) {
       if (catFilter !== '전체' && p.cat !== catFilter) return false;
       if (!region || scope === 'all') return true;
       return scope === 'near' ? near.indexOf(p.region) !== -1 : p.region === region;
     }).sort(function (a, b) { return b.ts - a.ts; });
+    if (selectedPostId) {
+      var selected = items.find(function (p) { return Number(p.id) === Number(selectedPostId); });
+      if (selected) {
+        var back = el('button', 'btn-line', '‹ 목록으로');
+        back.type = 'button';
+        back.style.marginBottom = '12px';
+        back.addEventListener('click', function () { selectedPostId = null; renderPosts(); });
+        box.appendChild(back);
+        renderPostDetail(selected, box);
+        return;
+      }
+    }
     if (!items.length) { box.appendChild(el('div', 'empty', '아직 글이 없어요. 첫 글을 써보세요!')); return; }
     items.forEach(function (p) {
       var art = el('article', 'post');
+      art.tabIndex = 0;
+      art.addEventListener('click', function (e) {
+        if (e.target.closest('button')) return;
+        selectedPostId = p.id;
+        renderPosts();
+      });
+      art.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          selectedPostId = p.id;
+          renderPosts();
+        }
+      });
       var meta = el('div', 'post-meta');
       meta.appendChild(el('span', 'tag', p.cat));
       if (p.region) meta.appendChild(el('span', 'loc', '📍 ' + p.region));
@@ -638,7 +756,7 @@
   });
   $('btnReset').addEventListener('click', function () {
     if (!confirm('일정, 알림 상태, 커뮤니티 글, 설정이 모두 삭제됩니다. 계속할까요?')) return;
-    ['zip-settings', 'zip-events', 'zip-noti-read', 'zip-posts', 'zip-todos', 'zip-bills', 'zip-rent-paid'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+    ['zip-settings', 'zip-events', 'zip-noti-read', 'zip-posts', 'zip-todos', 'zip-bills', 'zip-rent-paid'].forEach(function (k) { try { localStorage.removeItem(k); } catch (e) { } });
     location.reload();
   });
 
