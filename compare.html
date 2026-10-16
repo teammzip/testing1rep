@@ -71,6 +71,7 @@
       min-height: 0;
       display: flex;
       justify-content: center;
+      align-items: center;
       padding: 12px;
     }
 
@@ -93,6 +94,7 @@
     }
 
     .dbview {
+      align-self: stretch;
       flex: 1;
       min-width: 0;
       overflow: auto;
@@ -182,8 +184,10 @@
   </div>
 
   <script>
-    var COUNT = 10;                                 // 시안 개수 (variants/1 ~ variants/N)
-    var SIZES = [['데스크톱', '100%'], ['태블릿', '768px'], ['모바일', '375px']];
+    var COUNT = 13;                              // 시안 개수 (variants/1 ~ variants/N)
+    // [이름, 폭, 높이]  태블릿·모바일은 실제 기기 비율(768×1024, 375×812)로 맞추고, 창이 작으면 높이만 창에 맞춰 줄어듦
+    var SIZES = [['데스크톱', '100%', '100%'], ['태블릿', '768px', 'min(1024px, 100%)'], ['모바일', '375px', 'min(812px, 100%)']];
+    function applySize() { frame.style.width = SIZES[size][1]; frame.style.height = SIZES[size][2]; }
     var frame = document.getElementById('frame');
 
     function read(key, fallback) { try { return localStorage.getItem(key) || fallback; } catch (e) { return fallback; } }
@@ -191,8 +195,12 @@
 
     var fromUrl = new URLSearchParams(location.search).get('v');          // compare.html?v=3 또는 ?v=db 로 바로 열기
     var saved = fromUrl || read('compare-v', '1');
-    var cur = saved === 'db' ? 'db' : Number(saved);                      // 숫자(시안 번호) 또는 'db'
-    if (cur !== 'db' && !(cur >= 1 && cur <= COUNT)) cur = 1;
+    var cur = (saved === 'db' || saved === 'login') ? saved : Number(saved);   // 숫자(시안 번호), 'db', 'login'
+    if (typeof cur === 'number' && !(cur >= 1 && cur <= COUNT)) cur = 1;
+    var lastV = typeof cur === 'number' ? cur : Number(read('compare-last', '1')) || 1;   // 로그인 후 보여줄 시안 번호
+    var LOGINS = [['A', 'a-intro'], ['B', 'b-overlay'], ['C', 'c-gradient']];
+    var lg = Number(read('compare-login', '0'));
+    if (!(lg >= 0 && lg < LOGINS.length)) lg = 0;
     var size = Number(read('compare-size', '0'));
     if (!(size >= 0 && size < SIZES.length)) size = 0;
 
@@ -200,23 +208,35 @@
       var isDb = cur === 'db';
       document.querySelectorAll('#vars button').forEach(function (b) { b.classList.toggle('on', b.getAttribute('data-v') === String(cur)); });
       document.querySelectorAll('#sizes button').forEach(function (b, i) { b.classList.toggle('on', i === size); });
+      var isLogin = cur === 'login';
+      if (typeof cur === 'number') { lastV = cur; write('compare-last', String(cur)); }
+      document.querySelectorAll('#vars .login-btn').forEach(function (b, i) { b.classList.toggle('on', isLogin && i === lg); });
       frame.hidden = isDb;                                        // DB 예시를 보는 동안에는 시안 화면을 숨김
       document.getElementById('dbview').hidden = !isDb;
       document.getElementById('sizes').style.visibility = isDb ? 'hidden' : '';
       document.getElementById('open').style.visibility = isDb ? 'hidden' : '';
       if (isDb) { document.title = 'ZIP DB 예시'; return; }
-      var src = 'variants/' + cur + '/asdf.html';
+      var src = isLogin
+        ? 'login/' + LOGINS[lg][1] + '.html?next=' + encodeURIComponent('../variants/' + lastV + '/asdf.html')   // 로그인 뒤에 보일 시안
+        : 'variants/' + cur + '/asdf.html';
+      if (isLogin) { frame.src = src; applySize(); document.getElementById('open').href = src; document.title = 'ZIP 로그인 예시'; return; }
       if (frame.getAttribute('src') !== src) frame.src = src;
-      frame.style.width = SIZES[size][1];
+      applySize();
       document.getElementById('open').href = src;
       document.title = 'ZIP 시안 ' + cur + ' 비교';
     }
 
+    // 번호 대신 이름이 붙는 시안: [버튼 이름, 눌렀을 때 맞춰 줄 화면 크기(SIZES 번호)]  (12 = 모바일시작, 13 = PC시작)
+    var NAMED = { 12: ['모바일시작', 2], 13: ['PC시작', 0] };
     for (var i = 1; i <= COUNT; i++) {
       (function (n) {
-        var b = document.createElement('button');
-        b.type = 'button'; b.textContent = n; b.setAttribute('data-v', String(n));
-        b.addEventListener('click', function () { cur = n; write('compare-v', String(n)); render(); });
+        var b = document.createElement('button'), named = NAMED[n];
+        b.type = 'button'; b.textContent = named ? named[0] : n; b.setAttribute('data-v', String(n));
+        b.addEventListener('click', function () {
+          cur = n; write('compare-v', String(n));
+          if (named) { size = named[1]; write('compare-size', String(size)); }   // 모바일시작은 모바일 화면, PC시작은 데스크톱 화면으로 바로 보여줌
+          render();
+        });
         document.getElementById('vars').appendChild(b);
       })(i);
     }
@@ -225,6 +245,13 @@
     dbBtn.type = 'button'; dbBtn.className = 'db-btn'; dbBtn.textContent = 'DB 예시'; dbBtn.setAttribute('data-v', 'db');
     dbBtn.addEventListener('click', function () { cur = 'db'; write('compare-v', 'db'); render(); });
     document.getElementById('vars').appendChild(dbBtn);
+    // DB 예시 옆의 로그인 예시 버튼 3개 (A·B·C 구조)
+    LOGINS.forEach(function (l, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'db-btn login-btn'; b.textContent = '로그인 ' + l[0];
+      b.addEventListener('click', function () { cur = 'login'; lg = i; write('compare-v', 'login'); write('compare-login', String(i)); render(); });
+      document.getElementById('vars').appendChild(b);
+    });
 
     // 그림을 누르면 원래 크기로 확대(옆으로 밀어서 보기), 다시 누르면 화면 폭에 맞게 축소
     document.querySelectorAll('#dbview img').forEach(function (img) {

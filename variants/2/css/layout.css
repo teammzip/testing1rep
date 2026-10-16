@@ -171,7 +171,7 @@
   width: 46px;
   height: 46px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffb48f, var(--orange));
+  background: linear-gradient(135deg, #8dbaf6, var(--orange));
   display: grid;
   place-items: center;
   color: #fff;
@@ -293,7 +293,7 @@
   display: grid;
   place-items: center;
   font-size: 18px;
-  background: #fff4ec;
+  background: #eaf2ff;
   flex: none;
 }
 
@@ -362,7 +362,7 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: linear-gradient(135deg, #ffb48f, var(--orange));
+  background: linear-gradient(135deg, #8dbaf6, var(--orange));
   display: grid;
   place-items: center;
   color: #fff;
@@ -503,7 +503,7 @@
     margin-top: -22px;
     background: var(--orange) !important;
     color: #fff;
-    box-shadow: 0 4px 12px rgba(255, 122, 69, .45);
+    box-shadow: 0 4px 12px rgba(47, 128, 237, .45);
   }
 
   .nav-item[data-action="photo"] svg {

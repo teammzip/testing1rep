@@ -33,7 +33,7 @@
 }
 
 .topic.suggest {
-  background: #fff4ec;
+  background: #eaf2ff;
 }
 
 .topic .t-ico {
@@ -54,7 +54,7 @@
   display: flex;
   gap: 12px;
   align-items: center;
-  background: #fff4ec;
+  background: #eaf2ff;
   border-radius: 12px;
   padding: 10px;
   margin-bottom: 14px;
