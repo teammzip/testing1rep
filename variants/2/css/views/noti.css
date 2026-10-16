@@ -17,7 +17,7 @@
   width: 36px;
   height: 36px;
   border-radius: 10px;
-  background: #fff4ec;
+  background: #eaf2ff;
   display: grid;
   place-items: center;
   font-size: 17px;
@@ -64,7 +64,7 @@
 }
 
 .noti.unread {
-  background: #fffaf6;
+  background: #f5f9ff;
 }
 
 .noti .udot {
