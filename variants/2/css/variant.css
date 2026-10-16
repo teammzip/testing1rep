@@ -1,0 +1,68 @@
+/* 시안: 모바일 상단 아이콘이 3개(알림, 설정, +1)라서 제목 오른쪽 여백을 늘림 */
+@media (max-width: 700px) {
+  .topbar > div:nth-child(2) {
+    padding-right: 142px;
+  }
+}
+
+/* 상단 아이콘: 지금 보는 화면의 아이콘은 주황색 테두리로 표시 (다시 누르면 홈) */
+.mob-icon.active {
+  color: var(--orange);
+  border-color: var(--orange);
+}
+
+/* 세로 스크롤바를 항상 보이게: 내용이 짧은 화면(예: 생활)에서도 스크롤바가 사라지지 않고,
+ * 화면을 옮겨도 본문 폭이 흔들리지 않는다 (내용이 짧으면 스크롤바는 흐리게 비활성으로만 보임) */
+html {
+  overflow-y: scroll;
+}
+
+/* 시안 설명: 인사말 대신 1번(원본) 대비 바뀐 점을 표시 (긴 글이라 글자 크기를 줄임) */
+#todayTitle {
+  font-size: 22px;
+  line-height: 1.45;
+}
+
+#todayTitle .note-line {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+#todayTitle .note-line b {
+  display: inline-block;
+  margin-right: 8px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: var(--orange);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+@media (max-width: 900px) {
+  #todayTitle .note-line {
+    font-size: 14px;
+  }
+}
+
+#todayTitle .note-sub {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+@media (max-width: 900px) {
+  #todayTitle {
+    font-size: 17px;
+  }
+
+  #todayTitle .note-sub {
+    font-size: 12px;
+  }
+}
